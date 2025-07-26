@@ -1,109 +1,43 @@
+
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <title>變壓器測試報告產生器</title>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-Regular.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
-  <style>
-    body { font-family: 'Microsoft JhengHei','Noto Sans TC',sans-serif; padding: 2rem; }
-    input[type="text"] { width: 100%; margin-bottom: 10px; padding: 5px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 700px; }
-    button { margin-top: 10px; padding: 8px 16px; font-size: 16px; }
-    canvas { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <title>變壓器 PDF 工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
+    </style>
 </head>
 <body>
-  <h2>變壓器測試報告產生器</h2>
-  <input type="file" id="imgInput" accept="image/*" />
-  <button onclick="recognizeImage()">辨識圖片並填表</button>
-  <p id="ocr-status"></p>
-  <div class="form-grid">
-    <div><label>客戶：</label><input id="cust" type="text" /></div>
-    <div><label>試驗地點：</label><input id="site" type="text" /></div>
-    <div><label>試驗日期：</label><input id="date" type="text" /></div>
-    <div><label>製造廠：</label><input id="maker" type="text" /></div>
-    <div><label>盤面名稱：</label><input id="panel" type="text" /></div>
-    <div><label>容量：</label><input id="cap" type="text" /></div>
-    <div><label>製造編號：</label><input id="sn" type="text" /></div>
-    <div><label>一次電壓：</label><input id="v1" type="text" /></div>
-    <div><label>二次電壓：</label><input id="v2" type="text" /></div>
-    <div><label>製造日期：</label><input id="mdate" type="text" /></div>
-  </div>
-  <button onclick="generatePDF()">產生 PDF 並下載</button>
+    <h2>圖片上傳 ➝ OCR ➝ PDF</h2>
+    <input type="file" id="imageInput" accept="image/*"><br><br>
+    <button onclick="processImage()">開始辨識與產出 PDF</button>
 
-  <script>
-    const { jsPDF } = window.jspdf;
+    <h3>辨識結果預覽：</h3>
+    <div id="output"></div>
 
-    async function recognizeImage() {
-      const file = document.getElementById('imgInput').files[0];
-      const status = document.getElementById('ocr-status');
-      if (!file) return alert('請選擇圖片');
-      status.textContent = '辨識中…';
-      const result = await Tesseract.recognize(file, 'chi_tra');
-      status.textContent = '完成，自動填表';
-      const text = result.data.text;
+    <script>
+        async function processImage() {
+            const file = document.getElementById('imageInput').files[0];
+            if (!file) return alert("請先上傳圖片！");
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const { data: { text } } = await Tesseract.recognize(reader.result, 'chi_tra');
+                document.getElementById('output').innerText = text;
 
-      const map = {
-        cust: /客\s*戶[：:]\s*(.+)/,
-        site: /試驗地點[：:]\s*(.+)/,
-        date: /試驗日期[：:]\s*(.+)/,
-        maker: /製造廠[：:]\s*(.+)/,
-        panel: /盤面名稱[：:]\s*(.+)/,
-        cap: /容\s*量[：:]\s*(.+)/,
-        sn: /製造編號[：:]\s*(.+)/,
-        v1: /一次電壓[：:]\s*(.+)/,
-        v2: /二次電壓[：:]\s*(.+)/,
-        mdate: /製造日期[：:]\s*(.+)/
-      };
-
-      for (const id in map) {
-        const match = text.match(map[id]);
-        if (match) document.getElementById(id).value = match[1].trim();
-      }
-    }
-
-    function generatePDF() {
-      const doc = new jsPDF();
-      doc.addFileToVFS("NotoSansCJKtc-Regular.ttf", window.NotoSansCJKtcRegular);
-      doc.addFont("NotoSansCJKtc-Regular.ttf", "NotoSansCJKtc", "normal");
-      doc.setFont("NotoSansCJKtc");
-      doc.setFontSize(14);
-
-      const fields = ["cust","site","date","maker","panel","cap","sn","v1","v2","mdate"];
-      const labels = ["客戶", "試驗地點", "試驗日期", "製造廠", "盤面名稱", "容量", "製造編號", "一次電壓", "二次電壓", "製造日期"];
-      let y = 20;
-      doc.text("變壓器測試報告", 70, y); y += 15;
-
-      fields.forEach((id, i) => {
-        const val = document.getElementById(id).value || "";
-        doc.text(`${labels[i]}：${val}`, 15, y);
-        y += 10;
-      });
-
-      // 表格線條與資料
-      const startX = 15, startY = y + 10;
-      const colW = [45, 30, 30, 30, 30];
-      const rows = [
-        ['檢測部份', '12kV', '24kV', '36kV', '評判'],
-        ['30秒', '0.1', '0.1', '0.3', 'G'],
-        ['60秒', '0.1', '0.1', '0.3', 'G'],
-        ['電阻(MΩ)', '', '', '120000', '']
-      ];
-
-      doc.setLineWidth(0.3);
-      rows.forEach((row, r) => {
-        let x = startX, rowY = startY + r * 10;
-        row.forEach((text, c) => {
-          doc.rect(x, rowY, colW[c], 10);
-          doc.text(text, x + 2, rowY + 7);
-          x += colW[c];
-        });
-      });
-
-      doc.save("變壓器測試報告.pdf");
-    }
-  </script>
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                pdf.setFont("Helvetica");
+                pdf.setFontSize(12);
+                const lines = pdf.splitTextToSize(text, 180);
+                pdf.text(lines, 10, 10);
+                pdf.save("result.pdf");
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
 </body>
 </html>
