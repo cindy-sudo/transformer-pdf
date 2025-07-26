@@ -1,0 +1,17 @@
+
+body {
+  font-family: "Microsoft JhengHei", sans-serif;
+  padding: 20px;
+}
+#result-table {
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+#result-table td {
+  border: 1px solid #999;
+  padding: 6px 10px;
+}
+#status {
+  margin-top: 10px;
+  color: #007acc;
+}

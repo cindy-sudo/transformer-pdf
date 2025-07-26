@@ -2,42 +2,30 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <title>變壓器 PDF 工具</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>圖片轉表格自動填寫</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h2>圖片上傳 ➝ OCR ➝ PDF</h2>
-    <input type="file" id="imageInput" accept="image/*"><br><br>
-    <button onclick="processImage()">開始辨識與產出 PDF</button>
+  <h2>上傳圖片 ➝ 自動辨識 ➝ 自動填表</h2>
+  <input type="file" id="imgInput" accept="image/*">
+  <button onclick="recognize()">辨識並填表</button>
+  <div id="status"></div>
 
-    <h3>辨識結果預覽：</h3>
-    <div id="output"></div>
+  <table id="result-table">
+    <tr><td>客戶：</td><td id="cust"></td></tr>
+    <tr><td>試驗地點：</td><td id="site"></td></tr>
+    <tr><td>試驗日期：</td><td id="date"></td></tr>
+    <tr><td>製造廠：</td><td id="maker"></td></tr>
+    <tr><td>盤面名稱：</td><td id="panel"></td></tr>
+    <tr><td>一次電壓：</td><td id="v1"></td></tr>
+    <tr><td>製造編號：</td><td id="sn"></td></tr>
+    <tr><td>二次電壓：</td><td id="v2"></td></tr>
+    <tr><td>容量：</td><td id="cap"></td></tr>
+    <tr><td>製造日期：</td><td id="mdate"></td></tr>
+  </table>
 
-    <script>
-        async function processImage() {
-            const file = document.getElementById('imageInput').files[0];
-            if (!file) return alert("請先上傳圖片！");
-            const reader = new FileReader();
-            reader.onload = async () => {
-                const { data: { text } } = await Tesseract.recognize(reader.result, 'chi_tra');
-                document.getElementById('output').innerText = text;
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF();
-                pdf.setFont("Helvetica");
-                pdf.setFontSize(12);
-                const lines = pdf.splitTextToSize(text, 180);
-                pdf.text(lines, 10, 10);
-                pdf.save("result.pdf");
-            };
-            reader.readAsDataURL(file);
-        }
-    </script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
